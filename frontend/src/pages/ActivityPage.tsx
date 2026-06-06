@@ -1,45 +1,26 @@
 import { useState } from "react";
-
-const activities = [
-  {
-    id: 1,
-    type: "PROJECT",
-    title: "프로젝트 생성",
-    description: "DevRadar 프로젝트가 생성되었습니다.",
-    createdAt: "2026-06-03 15:20",
-  },
-  {
-    id: 2,
-    type: "TASK",
-    title: "작업 추가",
-    description: "Dashboard UI 작업이 등록되었습니다.",
-    createdAt: "2026-06-03 15:35",
-  },
-  {
-    id: 3,
-    type: "GITHUB",
-    title: "GitHub 연동 준비",
-    description: "GitHub Repository 연동 기능을 준비 중입니다.",
-    createdAt: "2026-06-03 15:50",
-  },
-  {
-    id: 4,
-    type: "PROJECT",
-    title: "프로젝트 수정",
-    description: "프로젝트 상태가 IN_PROGRESS로 변경되었습니다.",
-    createdAt: "2026-06-03 16:10",
-  },
-];
+import { useActivityStore } from "../stores/activityStore";
 
 const filterOptions = ["ALL", "PROJECT", "TASK", "GITHUB"];
 
 export default function ActivityPage() {
   const [selectedType, setSelectedType] = useState("ALL");
+  const [searchKeyword, setSearchKeyword] = useState("");
 
-  const filteredActivities =
-    selectedType === "ALL"
-      ? activities
-      : activities.filter((activity) => activity.type === selectedType);
+  const activities = useActivityStore((state) => state.activities);
+
+  const filteredActivities = activities.filter((activity) => {
+    const matchesType =
+      selectedType === "ALL" || activity.type === selectedType;
+
+    const keyword = searchKeyword.toLowerCase();
+
+    const matchesKeyword =
+      activity.title.toLowerCase().includes(keyword) ||
+      activity.description.toLowerCase().includes(keyword);
+
+    return matchesType && matchesKeyword;
+  });
 
   return (
     <div>
@@ -51,21 +32,30 @@ export default function ActivityPage() {
         </p>
       </div>
 
-      <div className="mb-6 flex gap-2">
-        {filterOptions.map((option) => (
-          <button
-            key={option}
-            onClick={() => setSelectedType(option)}
-            className={[
-              "rounded-full px-4 py-2 text-sm font-medium transition",
-              selectedType === option
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50",
-            ].join(" ")}
-          >
-            {option}
-          </button>
-        ))}
+      <div className="mb-6 flex flex-col gap-4">
+        <div className="flex gap-2">
+          {filterOptions.map((option) => (
+            <button
+              key={option}
+              onClick={() => setSelectedType(option)}
+              className={[
+                "rounded-full px-4 py-2 text-sm font-medium transition",
+                selectedType === option
+                  ? "bg-blue-600 text-white"
+                  : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50",
+              ].join(" ")}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+
+        <input
+          value={searchKeyword}
+          onChange={(event) => setSearchKeyword(event.target.value)}
+          placeholder="활동 제목 또는 설명으로 검색"
+          className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-blue-600"
+        />
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -74,7 +64,7 @@ export default function ActivityPage() {
             key={activity.id}
             className="border-b border-gray-100 p-6 last:border-b-0"
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-6">
               <div>
                 <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">
                   {activity.type}
@@ -89,12 +79,18 @@ export default function ActivityPage() {
                 </p>
               </div>
 
-              <p className="text-sm text-gray-400">
+              <p className="shrink-0 text-sm text-gray-400">
                 {activity.createdAt}
               </p>
             </div>
           </div>
         ))}
+
+        {filteredActivities.length === 0 && (
+          <div className="p-8 text-center text-sm text-gray-400">
+            표시할 활동이 없습니다.
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,66 +1,46 @@
-import { useState } from "react";
 import SummaryCard from "../components/dashboard/SummaryCard";
+import { useActivityStore } from "../stores/activityStore";
+import { useProjectStore } from "../stores/projectStore";
+import { useTaskStore } from "../stores/taskStore";
 
 export default function DashboardPage() {
-  const [projectCount, setProjectCount] = useState(0);
-  const [projectName, setProjectName] = useState("");
+  const projects = useProjectStore((state) => state.projects);
+  const tasks = useTaskStore((state) => state.tasks);
+  const activities = useActivityStore((state) => state.activities);
 
-  const [recentActivities, setRecentActivities] = useState([
-    {
-      id: 1,
-      title: "프로젝트 생성",
-      description: "DevRadar 프로젝트가 생성되었습니다.",
-    },
-    {
-      id: 2,
-      title: "작업 추가",
-      description: "첫 번째 작업이 등록되었습니다.",
-    },
-    {
-      id: 3,
-      title: "GitHub 연동",
-      description: "GitHub 계정 연동을 준비 중입니다.",
-    },
-  ]);
+  const completedTasks = tasks.filter((task) => task.status === "DONE");
+
+  const completionRate =
+    tasks.length === 0
+      ? 0
+      : Math.round((completedTasks.length / tasks.length) * 100);
 
   const summaryCards = [
     {
       title: "Projects",
-      value: projectCount,
-      description: "진행 중인 프로젝트",
+      value: projects.length,
+      description: "관리 중인 프로젝트",
       icon: "📁",
     },
     {
       title: "Tasks",
-      value: 0,
-      description: "등록된 작업",
+      value: tasks.length,
+      description: "전체 작업 수",
       icon: "📋",
     },
     {
-      title: "Commits",
-      value: 0,
-      description: "GitHub 커밋",
-      icon: "💻",
+      title: "Completed",
+      value: completedTasks.length,
+      description: "완료된 작업",
+      icon: "✅",
+    },
+    {
+      title: "Completion Rate",
+      value: completionRate,
+      description: "전체 작업 완료율",
+      icon: "📈",
     },
   ];
-
-  const handleAddProject = () => {
-    if (!projectName.trim()) {
-      return;
-    }
-
-    const newProjectCount = projectCount + 1;
-
-    const newActivity = {
-      id: Date.now(),
-      title: "프로젝트 생성",
-      description: `${projectName} 프로젝트가 생성되었습니다.`,
-    };
-
-    setProjectCount(newProjectCount);
-    setRecentActivities([newActivity, ...recentActivities].slice(0, 5));
-    setProjectName("");
-  };
 
   return (
     <div>
@@ -72,7 +52,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
         {summaryCards.map((card) => (
           <SummaryCard
             key={card.title}
@@ -85,29 +65,22 @@ export default function DashboardPage() {
       </div>
 
       <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h3 className="mb-4 text-xl font-bold text-gray-900">
-          Quick Project
-        </h3>
+        <div className="mb-2 flex justify-between text-sm">
+          <span className="font-medium text-gray-700">
+            Overall Task Completion
+          </span>
 
-        <div className="flex flex-col gap-3 md:flex-row">
-          <input
-            value={projectName}
-            onChange={(event) => setProjectName(event.target.value)}
-            placeholder="프로젝트명을 입력하세요"
-            className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm outline-none focus:border-blue-600"
-          />
-
-          <button
-            onClick={handleAddProject}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            프로젝트 추가
-          </button>
+          <span className="font-semibold text-gray-900">
+            {completionRate}%
+          </span>
         </div>
 
-        <p className="mt-4 text-sm text-gray-500">
-          현재 프로젝트 수: {projectCount}
-        </p>
+        <div className="h-3 rounded-full bg-gray-100">
+          <div
+            className="h-3 rounded-full bg-blue-600"
+            style={{ width: `${completionRate}%` }}
+          />
+        </div>
       </div>
 
       <div className="mt-8">
@@ -116,18 +89,34 @@ export default function DashboardPage() {
         </h3>
 
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          {recentActivities.map((activity) => (
+          {activities.slice(0, 5).map((activity) => (
             <div
               key={activity.id}
               className="border-b border-gray-100 py-4 last:border-b-0"
             >
-              <p className="font-semibold text-gray-900">{activity.title}</p>
+              <div className="flex items-center justify-between gap-6">
+                <div>
+                  <p className="font-semibold text-gray-900">
+                    {activity.title}
+                  </p>
 
-              <p className="mt-1 text-sm text-gray-500">
-                {activity.description}
-              </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {activity.description}
+                  </p>
+                </div>
+
+                <span className="shrink-0 text-xs text-gray-400">
+                  {activity.createdAt}
+                </span>
+              </div>
             </div>
           ))}
+
+          {activities.length === 0 && (
+            <div className="py-8 text-center text-sm text-gray-400">
+              활동 내역이 없습니다.
+            </div>
+          )}
         </div>
       </div>
     </div>
